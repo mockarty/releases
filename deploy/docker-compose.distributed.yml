@@ -1,0 +1,194 @@
+# Mockarty Distributed Stack
+# Admin node (coordinator) + multiple resolver nodes + runner agents + PostgreSQL + Redis.
+# Suitable for production deployments with horizontal scaling.
+#
+# Usage:
+#   cp .env.example .env && nano .env
+#   docker compose -f docker-compose.distributed.yml up -d
+#
+# Scale resolver and runner nodes (no port conflicts — use a reverse proxy or load balancer):
+#   docker compose -f docker-compose.distributed.yml up -d --scale mockarty-resolver=3 --scale mockarty-runner=2
+#
+# NOTE on port bindings when scaling:
+#   Resolver and runner services do NOT bind host ports when scaled (would conflict).
+#   Use Traefik/nginx as a load balancer in front of them, or access via Docker network.
+#   The admin node binds HTTP, HTTPS, and MCP ports on the host.
+#   The coordinator port (5773) is internal — resolver/runner nodes connect to it inside the Docker network.
+#
+# Architecture:
+#   [clients] --> [admin:5770/5771/5772]
+#                     |-- coordinator:5773 (internal) <-- [mockarty-resolver x N]
+#                                                     <-- [mockarty-runner x N]
+#
+# Access:
+#   Admin Web UI:      http://localhost:5770/ui/
+#   Admin HTTPS:       https://localhost:5771/  (when TLS configured)
+#   Admin MCP:         localhost:5772
+#   Resolver HTTP:     via Docker network mockarty_net:5780
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mockarty-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mockarty}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-mockarty}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mockarty} -d ${POSTGRES_DB:-mockarty}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - mockarty_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: mockarty-redis
+    restart: unless-stopped
+    command: >
+      sh -c "if [ -n \"$$REDIS_PASSWORD\" ]; then
+        redis-server --requirepass \"$$REDIS_PASSWORD\";
+      else
+        redis-server;
+      fi"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD-SHELL", "if [ -n \"$$REDIS_PASSWORD\" ]; then redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG; else redis-cli ping | grep PONG; fi" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - mockarty_net
+
+  # Admin node — coordinator, Web UI, API, mock management
+  # Exposes HTTP, HTTPS, and MCP ports on the host.
+  # The coordinator gRPC port (5773) is internal only — not exposed to the host.
+  mockarty:
+    image: mockarty/mockarty:${VERSION:-latest}
+    container_name: mockarty-admin
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      # HTTP — Web UI, REST API, mock traffic
+      - "${HTTP_PORT:-5770}:5770"
+      # HTTPS — TLS-terminated HTTP (configure HTTPS_CERT_FILE/HTTPS_KEY_FILE to enable)
+      - "${HTTPS_PORT:-5771}:5771"
+      # MCP — Model Context Protocol server
+      - "${MCP_PORT:-5772}:5772"
+      # Coordinator gRPC — resolver/runner nodes connect here (expose to host only if needed externally)
+      - "${COORDINATOR_PORT:-5773}:5773"
+    environment:
+      DB_USE: pg
+      DB_DSN: postgres://${POSTGRES_USER:-mockarty}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mockarty}?sslmode=disable
+      CACHE_TYPE: redis
+      REPO_REDIS_HOST: redis
+      REPO_REDIS_PORT: "6379"
+      REPO_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      HTTP_PORT: "5770"
+      HTTPS_PORT: "5771"
+      MCP_PORT: "5772"
+      RUNNER_GRPC_PORT: "5773"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      FIRST_ADMIN_LOGIN: ${FIRST_ADMIN_LOGIN:-admin}
+      FIRST_ADMIN_PASSWORD: ${FIRST_ADMIN_PASSWORD:?FIRST_ADMIN_PASSWORD is required}
+      AUTH_BASE_URL: ${AUTH_BASE_URL:-http://localhost:5770}
+    volumes:
+      - mockarty_data:/app/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:5770/health/live || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - mockarty_net
+
+  # Resolver nodes — serve mock HTTP traffic
+  # Scale with: --scale mockarty-resolver=N
+  # NO host port bindings — access via load balancer or Docker network directly.
+  mockarty-resolver:
+    image: mockarty/resolver:${VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      mockarty:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    # Intentionally no host port bindings here — conflicts when scaling.
+    # Use a load balancer (Traefik/nginx) in front, or use a single-replica override.
+    expose:
+      - "5780"   # HTTP mock server
+      - "6780"   # Dashboard UI
+    environment:
+      COORDINATOR_ADDR: mockarty:5773
+      API_TOKEN: ${RESOLVER_API_TOKEN:?RESOLVER_API_TOKEN is required - generate in admin UI}
+      DB_DSN: postgres://${POSTGRES_USER:-mockarty}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mockarty}?sslmode=disable
+      HTTP_PORT: "5780"
+      UI_PORT: "6780"
+      UI_ENABLED: "true"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      STORE_MODE: ${RESOLVER_STORE_MODE:-read_only}
+      CACHE_SYNC_INTERVAL: ${RESOLVER_CACHE_SYNC_INTERVAL:-30s}
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:5780/health/live || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - mockarty_net
+
+  # Runner nodes — execute test collections
+  # Scale with: --scale mockarty-runner=N
+  mockarty-runner:
+    image: mockarty/runner:${VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      mockarty:
+        condition: service_healthy
+    expose:
+      - "6770"   # Dashboard UI
+    environment:
+      COORDINATOR_ADDR: mockarty:5773
+      API_TOKEN: ${RUNNER_API_TOKEN:?RUNNER_API_TOKEN is required - generate in admin UI}
+      UI_PORT: "6770"
+      UI_ENABLED: "true"
+      MAX_CONCURRENT_TASKS: ${MAX_CONCURRENT_TASKS:-3}
+      CAPABILITIES: ${RUNNER_CAPABILITIES:-api_test,performance}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:6770/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - mockarty_net
+
+networks:
+  mockarty_net:
+    name: mockarty_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  mockarty_data:
+    driver: local

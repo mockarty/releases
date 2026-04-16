@@ -1,0 +1,81 @@
+# Mockarty Minimal Stack
+# Single admin node + PostgreSQL. Suitable for evaluation and small teams.
+#
+# Usage:
+#   cp .env.example .env && nano .env  # fill in passwords
+#   docker compose -f docker-compose.minimal.yml up -d
+#
+# Access:
+#   Web UI:    http://localhost:5770/ui/
+#   REST API:  http://localhost:5770/
+#   HTTPS:     https://localhost:5771/  (when TLS configured)
+#   MCP:       localhost:5772
+#   Swagger:   http://localhost:5770/swagger/
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mockarty-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mockarty}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-mockarty}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mockarty} -d ${POSTGRES_DB:-mockarty}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - mockarty_net
+
+  mockarty:
+    image: mockarty/mockarty:${VERSION:-latest}
+    container_name: mockarty
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      # HTTP — Web UI, REST API, mock HTTP traffic
+      - "${HTTP_PORT:-5770}:5770"
+      # HTTPS — TLS-terminated HTTP (configure HTTPS_CERT_FILE/HTTPS_KEY_FILE to enable)
+      - "${HTTPS_PORT:-5771}:5771"
+      # MCP — Model Context Protocol server
+      - "${MCP_PORT:-5772}:5772"
+    environment:
+      DB_USE: pg
+      DB_DSN: postgres://${POSTGRES_USER:-mockarty}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mockarty}?sslmode=disable
+      CACHE_TYPE: inmemory
+      HTTP_PORT: "5770"
+      HTTPS_PORT: "5771"
+      MCP_PORT: "5772"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      FIRST_ADMIN_LOGIN: ${FIRST_ADMIN_LOGIN:-admin}
+      FIRST_ADMIN_PASSWORD: ${FIRST_ADMIN_PASSWORD:?FIRST_ADMIN_PASSWORD is required}
+      AUTH_BASE_URL: ${AUTH_BASE_URL:-http://localhost:5770}
+    volumes:
+      - mockarty_data:/app/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:5770/health/live || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - mockarty_net
+
+networks:
+  mockarty_net:
+    name: mockarty_network
+
+volumes:
+  postgres_data:
+    driver: local
+  mockarty_data:
+    driver: local
