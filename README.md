@@ -18,6 +18,27 @@
 
 [Mockarty](https://mockarty.ru) is a powerful mock server platform for HTTP, gRPC, MCP, GraphQL, SOAP, SSE, WebSocket, Kafka, RabbitMQ, and SMTP. It provides dynamic response generation with Faker and JsonPath, sophisticated condition matching, stateful stores, proxy mode with delay injection, AI assistant integration, and distributed test execution with horizontal scaling.
 
+## Trying Mockarty on Your Laptop
+
+**Mockarty is a server-side application.** The API Tester, traffic recorder, webhooks, performance runs, and contract tests all send requests from the Mockarty process itself — not from your browser. By default Mockarty refuses to reach private, loopback, or link-local addresses (`127.0.0.1`, `localhost`, `10.x.x.x`, `192.168.x.x`, `::1`, …) to block SSRF.
+
+For local experimentation this default is surprising: "why can't Mockarty call my dev backend on `localhost:8080`?" To unlock private networking for a local run, set `ALLOW_PROXY_TO_PRIVATE_IPS=true` before starting the binary:
+
+```bash
+# macOS / Linux
+ALLOW_PROXY_TO_PRIVATE_IPS=true DB_USE=sqlite ./mockarty-darwin-arm64
+
+# Docker
+docker run -d --name mockarty -p 5770:5770 \
+  -e ALLOW_PROXY_TO_PRIVATE_IPS=true \
+  -e HTTP_BIND_ADDR=0.0.0.0 \
+  -e DB_USE=sqlite \
+  -e COOKIE_SECURE=false \
+  mockarty/mockarty:latest
+```
+
+> **Production note:** leave `ALLOW_PROXY_TO_PRIVATE_IPS` unset (or `false`) in any shared / remote environment. The flag is an SSRF escape hatch — enable it only on isolated dev machines where reaching `localhost` is explicitly desired.
+
 ## Components
 
 | Component | Binary | Description | Docker Image |
