@@ -93,6 +93,8 @@ services:
       - "${MCP_PORT:-5772}:5772"
       # Coordinator gRPC — resolver/runner nodes connect here (expose to host only if needed externally)
       - "${COORDINATOR_PORT:-5773}:5773"
+      # Traffic Recorder — auto-assigned proxy ports (hardcoded range 8081-8999)
+      - "8081-8999:8081-8999"
     environment:
       DB_USE: pg
       DB_DSN: postgres://${POSTGRES_USER:-mockarty}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mockarty}?sslmode=disable

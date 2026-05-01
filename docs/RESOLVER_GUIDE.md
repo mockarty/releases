@@ -66,7 +66,7 @@ docker run -d \
   --name resolver \
   -p 5780:5780 \
   -p 6780:6780 \
-  -e COORDINATOR_ADDR="admin-node:5773" \
+  -e COORDINATOR_ADDR="mockarty:5773" \
   -e API_TOKEN="mki_your_integration_token" \
   mockarty/resolver:latest
 ```
@@ -75,7 +75,7 @@ docker run -d \
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `COORDINATOR_ADDR` | *(required)* | Admin Node coordinator address, e.g. `admin-node:5773` |
+| `COORDINATOR_ADDR` | *(required)* | Admin Node coordinator address, e.g. `mockarty:5773` |
 | `API_TOKEN` | *(required)* | Integration API token created in the Admin Node |
 | `DB_DSN` | *(optional)* | Direct database connection for read-through (bypasses gRPC sync) |
 | `HTTP_PORT` | `5780` | HTTP port for mock traffic |
@@ -91,7 +91,7 @@ docker run -d \
 
 Before starting a Mock Resolver, you must create an integration token in the Admin Node:
 
-1. Open the Admin Node Web UI at `http://admin-node:5770/ui/settings`
+1. Open the Admin Node Web UI at `http://mockarty:5770/ui/settings`
 2. Navigate to **Integrations**
 3. Click **Add Integration**
 4. Select type **Resolver**
@@ -104,7 +104,7 @@ Use this token as the `API_TOKEN` environment variable.
 ### Standalone Binary
 
 ```bash
-export COORDINATOR_ADDR="admin-node:5773"
+export COORDINATOR_ADDR="mockarty:5773"
 export API_TOKEN="mki_your_integration_token"
 ./mockarty-resolver
 ```
@@ -120,7 +120,7 @@ services:
       - "5780:5780"
       - "6780:6780"
     environment:
-      COORDINATOR_ADDR: "admin-node:5773"
+      COORDINATOR_ADDR: "mockarty:5773"
       API_TOKEN: "mki_your_integration_token"
     deploy:
       replicas: 3
@@ -243,7 +243,7 @@ Key metrics:
 ### Cannot connect to coordinator
 
 ```
-Error: failed to connect to coordinator at admin-node:5773
+Error: failed to connect to coordinator at mockarty:5773
 ```
 
 - Verify the Admin Node is running and the coordinator is enabled (`RUNNER_COORDINATOR_ENABLED=true`)

@@ -48,6 +48,8 @@ services:
       - "${HTTPS_PORT:-5771}:5771"
       # MCP — Model Context Protocol server
       - "${MCP_PORT:-5772}:5772"
+      # Recorder — auto-assigned proxy ports (hardcoded range 8081-8999)
+      - "8081-8999:8081-8999"
     environment:
       DB_USE: pg
       DB_DSN: postgres://${POSTGRES_USER:-mockarty}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-mockarty}?sslmode=disable
