@@ -1,0 +1,21 @@
+services:
+  mockarty:
+    image: mockarty/mockarty:${MOCKARTY_VERSION:?Set MOCKARTY_VERSION to the published image tag}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5770:5770"
+    environment:
+      DB_USE: sqlite
+      DB_DSN: /data/mockarty.db
+      CACHE_TYPE: inmemory
+      HTTP_BIND_ADDR: 0.0.0.0
+      HTTP_PORT: "5770"
+      AUTH_BASE_URL: http://127.0.0.1:5770
+      COOKIE_SECURE: "false"
+      FIRST_ADMIN_LOGIN: admin
+      FIRST_ADMIN_PASSWORD: ${FIRST_ADMIN_PASSWORD:?Set a strong FIRST_ADMIN_PASSWORD}
+    volumes:
+      - community_data:/data
+
+volumes:
+  community_data:

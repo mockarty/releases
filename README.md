@@ -1,211 +1,155 @@
-<p align="center">
-  <img src="logo.svg" width="200" alt="Mockarty">
-</p>
+<p align="center"><img src="logo.svg" width="160" alt="Mockarty"></p>
 
-<h1 align="center">Mockarty Platform Releases</h1>
+# Mockarty Community
 
-<p align="center">
-  <i>Official release binaries for all <a href="https://mockarty.ru">Mockarty</a> platform components</i>
-</p>
+[Русская версия](#mockarty-community-на-русском) · [Downloads](https://mockarty.ru/downloads) · [Documentation](https://mockarty.ru/docs) · [GitHub releases](https://github.com/mockarty/releases/releases)
 
-<p align="center">
-  <a href="https://mockarty.ru">Website</a> ·
-  <a href="https://mockarty.ru/docs">Docs</a> ·
-  <a href="https://github.com/mockarty">GitHub</a>
-</p>
+> The first Community release is in preparation. The Community instructions below apply when a release lists Community Server support. Older preview downloads are available in Releases with their original release notes.
+
+Use Mockarty to mock APIs, run tests, and share results with your team. **Community Server runs on your own machine or server without a licence key or a Mockarty Cloud account.** It includes ten workspaces and five seats in each core module: mocks, testing, reliability, basic fuzz testing, test case management, work management, and contract testing.
+
+Desktop's interactive Harness and Community Server runner registration are available without an Enterprise licence. The autonomous mission engine requires Enterprise. Access to a team workspace follows the roles granted on that server.
+
+## Choose where to start
+
+| What you want to do | Where to start |
+|---|---|
+| Work on your computer | Install **Mockarty Desktop** from [Downloads](https://mockarty.ru/downloads) and choose local mode. You can connect it later to a team server or to [Mockarty Cloud](https://cloud.mockarty.ru/). |
+| Run Community Server on your machine | Start [one container](#start-community-server-with-docker) or run a [native binary](#run-a-native-server-binary). |
+| Set up a server for your team | Follow the [server deployment guide](https://mockarty.ru/docs/deployment-guide) and give your team the HTTPS address. |
+| Connect a coding runner | Choose a published `mockarty-coder-runner` for your platform from [Downloads](https://mockarty.ru/downloads#coding-runner), verify its checksum and [configure trust with your server](https://mockarty.ru/docs/ai-components#trust-setup). |
+| Use Android | Look for the signed **Mockarty Mobile** package on the [Android downloads page](https://mockarty.ru/downloads#android-mobile). Connect to the server or Cloud account where your team works. **Companion** is for a device you want to pair for testing. |
+
+## Start Community Server with Docker
+
+Clone this release repository. In the following commands, use the image tag listed in the [release notes](https://github.com/mockarty/releases/releases), for a release with a published server image. Run the commands from the cloned directory in Bash or Zsh.
+
+```bash
+printf 'Published Docker image tag (without v): '
+read -r MOCKARTY_VERSION
+export MOCKARTY_VERSION
+printf 'Set a strong password for admin: '
+read -rs FIRST_ADMIN_PASSWORD
+printf '\n'
+export FIRST_ADMIN_PASSWORD
+docker compose -f deploy/docker-compose.community.yml up -d
+```
+
+Open <http://127.0.0.1:5770/ui/> and sign in as `admin` with the password you entered. Review and accept the Community terms on first sign-in.
+
+The example binds the HTTP port to loopback and persists SQLite data in the `community_data` volume. To stop it, run `docker compose -f deploy/docker-compose.community.yml stop` in the same terminal. Keep the volume if you want to retain your data. For a shared server, follow the HTTPS setup in the deployment guide.
+
+## Run a native server binary
+
+Choose a [GitHub release](https://github.com/mockarty/releases/releases) that lists Community Server support and the `mockarty` binary for your operating system and CPU. Compare its SHA‑256 with the matching entry in `checksums.txt` from that release. On macOS and Linux, name the file `mockarty`, open its directory, and run:
+
+```bash
+chmod +x ./mockarty
+printf 'Set a strong password for admin: '
+read -rs FIRST_ADMIN_PASSWORD
+printf '\n'
+export FIRST_ADMIN_PASSWORD
+DB_USE=sqlite DB_DSN="$PWD/mockarty.db" CACHE_TYPE=inmemory \
+  HTTP_BIND_ADDR=127.0.0.1 HTTP_PORT=5770 AUTH_BASE_URL=http://127.0.0.1:5770 \
+  COOKIE_SECURE=false FIRST_ADMIN_LOGIN=admin ./mockarty
+```
+
+Open <http://127.0.0.1:5770/ui/>, sign in as `admin` with the password you entered and accept the Community terms.
+
+## Create your first mock
+
+1. In **Constructor**, select the `sandbox` workspace. Set the mock ID to `my-first-mock`, protocol to HTTP, method to `GET` and route to `/hello`.
+2. Set status `200`, content type `application/json` and body `{"message":"Hello from Mockarty"}`. Save the mock.
+3. Call the URL below. The response should contain the message you saved.
+
+```bash
+curl --fail --silent --show-error http://127.0.0.1:5770/stubs/sandbox/hello
+```
+
+Next, follow the [API testing guide](https://mockarty.ru/docs/quick-start#api-testing) to save a request in a collection and share the run with a teammate.
+
+For gRPC, WebSocket, broker and socket mocks, use the [protocol listeners built into Mockarty](https://mockarty.ru/docs/native-protocol-mocks). Use the [CLI releases](https://github.com/mockarty/mockarty-cli/releases) or the [SDK directory](docs/SDKS.md) to add Mockarty to your tests and CI jobs.
+
+## Guides and licence
+
+- [Admin node](docs/ADMIN_GUIDE.md) · [Mock Resolver](docs/RESOLVER_GUIDE.md) · [Test runner](docs/RUNNER_GUIDE.md) · [Native protocol mocks](https://mockarty.ru/docs/native-protocol-mocks)
+- [Deployment options](deploy/README.md) · [Report a reproducible issue](https://github.com/mockarty/releases/issues)
+- [Software licence](LICENSE) · [Community terms](https://mockarty.ru/legal/community) · [Mobile policies and account deletion](https://mockarty.ru/legal)
 
 ---
 
-[Mockarty](https://mockarty.ru) is a powerful mock server platform for HTTP, gRPC, MCP, GraphQL, SOAP, SSE, WebSocket, Kafka, RabbitMQ, and SMTP. It provides dynamic response generation with Faker and JsonPath, sophisticated condition matching, stateful stores, proxy mode with delay injection, AI assistant integration, and distributed test execution with horizontal scaling.
+## Mockarty Community на русском
 
-## Trying Mockarty on Your Laptop
+[English](#mockarty-community) · [Скачать](https://mockarty.ru/downloads) · [Документация](https://mockarty.ru/docs) · [Релизы GitHub](https://github.com/mockarty/releases/releases)
 
-**Mockarty is a server-side application.** The API Tester, traffic recorder, webhooks, performance runs, and contract tests all send requests from the Mockarty process itself — not from your browser. By default Mockarty refuses to reach private, loopback, or link-local addresses (`127.0.0.1`, `localhost`, `10.x.x.x`, `192.168.x.x`, `::1`, …) to block SSRF.
+> Первый релиз Community готовится. Инструкции ниже подходят для версий, в описании которых указана поддержка Community Server. Предыдущие предварительные сборки и их описания доступны в Releases.
 
-For local experimentation this default is surprising: "why can't Mockarty call my dev backend on `localhost:8080`?" To unlock private networking for a local run, set `ALLOW_PROXY_TO_PRIVATE_IPS=true` before starting the binary:
+В Mockarty можно создавать моки API, запускать тесты и делиться результатами с командой. **Community Server работает на вашем компьютере или сервере без лицензионного ключа и учётной записи Mockarty Cloud.** Доступны десять пространств и пять мест в каждом из семи модулей: моки, тестирование, надёжность, базовый фаззинг, управление тестированием, управление работой и тестирование контрактов.
 
-```bash
-# macOS / Linux
-ALLOW_PROXY_TO_PRIVATE_IPS=true DB_USE=sqlite ./mockarty-darwin-arm64
+Ручной харнесс в Desktop и подключение раннеров к Community Server доступны без лицензии Enterprise. Движок автономных миссий требует Enterprise. Доступ к командному пространству определяется ролями на выбранном сервере.
 
-# Docker
-docker run -d --name mockarty -p 5770:5770 \
-  -e ALLOW_PROXY_TO_PRIVATE_IPS=true \
-  -e HTTP_BIND_ADDR=0.0.0.0 \
-  -e DB_USE=sqlite \
-  -e COOKIE_SECURE=false \
-  mockarty/mockarty:latest
-```
+### С чего начать
 
-> **Production note:** leave `ALLOW_PROXY_TO_PRIVATE_IPS` unset (or `false`) in any shared / remote environment. The flag is an SSRF escape hatch — enable it only on isolated dev machines where reaching `localhost` is explicitly desired.
+| Задача | Куда идти |
+|---|---|
+| Работать на своём компьютере | Установите **Mockarty Desktop** со [страницы загрузок](https://mockarty.ru/downloads) и выберите локальный режим. Позже можно подключить командный сервер или [Mockarty Cloud](https://cloud.mockarty.ru/). |
+| Запустить Community Server на своём компьютере | Запустите [один контейнер](#запуск-community-server-в-docker) или [серверный бинарник](#запуск-серверного-бинарника). |
+| Развернуть сервер для команды | Используйте [руководство по развёртыванию](https://mockarty.ru/docs/deployment-guide) и передайте команде HTTPS-адрес. |
+| Подключить кодер-раннер | Выберите опубликованный `mockarty-coder-runner` для своей платформы на [странице загрузок](https://mockarty.ru/downloads?lang=ru#coding-runner), сверьте контрольную сумму и [настройте доверие к серверу](https://mockarty.ru/docs/ai-components?lang=ru#настройка-доверия). |
+| Работать с Android | Выберите подписанный **Mockarty Mobile** на [странице загрузок Android](https://mockarty.ru/downloads?lang=ru#android-mobile) и подключитесь к серверу или аккаунту Cloud, где работает команда. **Companion** позволяет подключить устройство для тестирования. |
 
-## Components
+### Запуск Community Server в Docker
 
-| Component | Binary | Description | Docker Image |
-|-----------|--------|-------------|--------------|
-| **Admin Node** | `mockarty` | Central management server: Web UI, REST API, database, MCP server, coordinator for resolvers and runners | `mockarty/mockarty` |
-| **Mock Resolver** | `mockarty-resolver` | Lightweight mock-serving node for horizontal scaling of HTTP traffic | `mockarty/mockarty-resolver` |
-| **Runner** | `mockarty-runner` | Distributed execution agent for API tests, performance tests, fuzzing, and chaos engineering | `mockarty/mockarty-runner` |
-| **Server Generator** | `mockarty-server-generator` | Generates standalone MCP/gRPC servers that call back to Mockarty for mock data | `mockarty/generator` |
-| **CLI** | `mockarty-cli` | Command-line tool for mocking, testing, fuzzing, performance, chaos, and contract testing | `mockarty/cli` |
-
-## Download
-
-### Latest Release
-
-Download the latest version from the [Releases](https://github.com/mockarty/releases/releases/latest) page.
-
-### Platform Matrix
-
-Each server component is built for the following platforms:
-
-| OS | Architecture | Suffix |
-|----|-------------|--------|
-| Linux | amd64 (x86_64) | `-linux-amd64` |
-| Linux | arm64 (aarch64) | `-linux-arm64` |
-| macOS | amd64 (Intel) | `-darwin-amd64` |
-| macOS | arm64 (Apple Silicon) | `-darwin-arm64` |
-| Windows | amd64 | `-windows-amd64.exe` |
-
-### Download URLs
-
-```
-https://github.com/mockarty/releases/releases/download/v{VERSION}/{binary}-{os}-{arch}
-```
-
-### Quick Install
+Клонируйте этот репозиторий релизов. Используйте тег образа из [описания релиза](https://github.com/mockarty/releases/releases), для которого опубликован образ сервера. Выполните команды из каталога репозитория в Bash или Zsh.
 
 ```bash
-# Admin Node — Linux amd64
-curl -LO https://github.com/mockarty/releases/releases/download/v1.0.0/mockarty-linux-amd64
-chmod +x mockarty-linux-amd64
-
-# Admin Node — macOS ARM (Apple Silicon)
-curl -LO https://github.com/mockarty/releases/releases/download/v1.0.0/mockarty-darwin-arm64
-chmod +x mockarty-darwin-arm64
-
-# Mock Resolver — Linux amd64
-curl -LO https://github.com/mockarty/releases/releases/download/v1.0.0/mockarty-resolver-linux-amd64
-chmod +x mockarty-resolver-linux-amd64
-
-# Runner — Linux amd64
-curl -LO https://github.com/mockarty/releases/releases/download/v1.0.0/mockarty-runner-linux-amd64
-chmod +x mockarty-runner-linux-amd64
-
-# Server Generator — Linux amd64
-curl -LO https://github.com/mockarty/releases/releases/download/v1.0.0/mockarty-server-generator-linux-amd64
-chmod +x mockarty-server-generator-linux-amd64
-
-# CLI — macOS ARM (CLI has its own repo)
-curl -LO https://github.com/mockarty/mockarty-cli/releases/download/v1.0.0/mockarty-cli-darwin-arm64
-chmod +x mockarty-cli-darwin-arm64
+printf 'Тег опубликованного Docker-образа (без v): '
+read -r MOCKARTY_VERSION
+export MOCKARTY_VERSION
+printf 'Задайте надёжный пароль для admin: '
+read -rs FIRST_ADMIN_PASSWORD
+printf '\n'
+export FIRST_ADMIN_PASSWORD
+docker compose -f deploy/docker-compose.community.yml up -d
 ```
 
-### CLI One-liner Install
+Откройте <http://127.0.0.1:5770/ui/> и войдите как `admin` с паролем, который вы ввели. При первом входе прочитайте и примите условия Community.
+
+Пример привязывает HTTP-порт к loopback и сохраняет SQLite в томе `community_data`. Чтобы остановить сервер, выполните `docker compose -f deploy/docker-compose.community.yml stop` в том же терминале. Сохраните том, чтобы сохранить данные. Для общего сервера настройте HTTPS по руководству по развёртыванию.
+
+### Запуск серверного бинарника
+
+Выберите [релиз GitHub](https://github.com/mockarty/releases/releases), в котором указана поддержка Community Server и есть `mockarty` для вашей ОС и процессора. Сверьте SHA‑256 файла с его строкой в `checksums.txt` того же релиза. На macOS и Linux назовите файл `mockarty`, откройте его каталог и выполните:
 
 ```bash
-curl -sSL https://mockarty.ru/install.sh | sh
+chmod +x ./mockarty
+printf 'Задайте надёжный пароль для admin: '
+read -rs FIRST_ADMIN_PASSWORD
+printf '\n'
+export FIRST_ADMIN_PASSWORD
+DB_USE=sqlite DB_DSN="$PWD/mockarty.db" CACHE_TYPE=inmemory \
+  HTTP_BIND_ADDR=127.0.0.1 HTTP_PORT=5770 AUTH_BASE_URL=http://127.0.0.1:5770 \
+  COOKIE_SECURE=false FIRST_ADMIN_LOGIN=admin ./mockarty
 ```
 
-Or via Homebrew:
+Откройте <http://127.0.0.1:5770/ui/>, войдите как `admin` с паролем, который вы ввели, и примите условия Community.
+
+### Первый мок
+
+1. В **Конструкторе** выберите пространство `sandbox`. Укажите ID `my-first-mock`, протокол HTTP, метод `GET` и маршрут `/hello`.
+2. Задайте статус `200`, тип `application/json` и тело `{"message":"Hello from Mockarty"}`. Сохраните мок.
+3. Вызовите адрес ниже. В ответе появится сохранённое сообщение.
 
 ```bash
-brew install mockarty/tap/mockarty-cli
+curl --fail --silent --show-error http://127.0.0.1:5770/stubs/sandbox/hello
 ```
 
-## Docker Images
+Затем откройте [руководство по API-тестированию](https://mockarty.ru/docs/quick-start?lang=ru#api-testing), чтобы сохранить запрос в коллекцию и поделиться результатом прогона с коллегой.
 
-```bash
-# Admin Node
-docker pull mockarty/mockarty:latest
-docker pull mockarty/mockarty:1.0.0
+Для моков gRPC, WebSocket, брокеров и сокетов используйте [встроенные обработчики Mockarty](https://mockarty.ru/docs/native-protocol-mocks?lang=ru). Для тестов и CI доступны [релизы CLI](https://github.com/mockarty/mockarty-cli/releases) и [SDK](docs/SDKS.md#sdk-на-русском).
 
-# Mock Resolver
-docker pull mockarty/resolver:latest
-docker pull mockarty/resolver:1.0.0
+### Руководства и лицензия
 
-# Runner Agent
-docker pull mockarty/runner:latest
-docker pull mockarty/runner:1.0.0
-
-# Server Generator
-docker pull mockarty/generator:latest
-docker pull mockarty/generator:1.0.0
-
-# CLI
-docker pull mockarty/cli:latest
-docker pull mockarty/cli:1.0.0
-```
-
-### Minimal Docker Compose
-
-```yaml
-version: "3.8"
-services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: mockarty
-      POSTGRES_USER: mockarty
-      POSTGRES_PASSWORD: mockarty
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  mockarty:
-    image: mockarty/mockarty:latest
-    ports:
-      - "5770:5770"   # HTTP
-      - "5771:5771"   # HTTPS
-      - "5772:5772"   # MCP
-      - "5773:5773"   # Coordinator gRPC
-    environment:
-      DB_DSN: "postgres://mockarty:mockarty@postgres:5432/mockarty?sslmode=disable"
-      HTTP_BIND_ADDR: "0.0.0.0"
-    depends_on:
-      - postgres
-
-volumes:
-  pgdata:
-```
-
-## Component Guides
-
-| Guide | Description |
-|-------|-------------|
-| [Admin Node Guide](docs/ADMIN_GUIDE.md) | Central management server setup, configuration, Web UI, API, and administration |
-| [Mock Resolver Guide](docs/RESOLVER_GUIDE.md) | Lightweight mock-serving nodes for horizontal scaling |
-| [Runner Agent Guide](docs/RUNNER_GUIDE.md) | Distributed execution agents for tests, fuzzing, performance, and chaos |
-| [Orchestrator Guide](docs/ORCHESTRATOR_GUIDE.md) | Standalone MCP/gRPC server generation |
-| [Docker Compose Deployment](deploy/DOCKER_COMPOSE.md) | Full platform deployment with Docker Compose |
-| [Kubernetes Deployment](deploy/KUBERNETES.md) | Helm chart and Kubernetes operator deployment |
-
-## Verification
-
-All release archives include SHA256 checksums in the `checksums.txt` file attached to each GitHub release.
-
-```bash
-# Download checksums
-curl -LO https://github.com/mockarty/releases/releases/download/v1.0.0/checksums.txt
-
-# Verify a binary
-sha256sum -c checksums.txt --ignore-missing
-
-# Or verify a single file manually
-sha256sum mockarty-linux-amd64
-# Compare the output with the corresponding line in checksums.txt
-```
-
-On macOS, use `shasum -a 256` instead of `sha256sum`.
-
-## Links
-
-- [Documentation](https://mockarty.ru/docs)
-- [CLI Repository](https://github.com/mockarty/mockarty-cli)
-- [Go SDK](https://github.com/mockarty/mockarty-go)
-- [Homebrew Tap](https://github.com/mockarty/homebrew-tap)
-- [Docker Hub](https://hub.docker.com/u/mockarty)
-- [Website](https://mockarty.ru)
-
----
-
-<p align="center"><sub>&copy; 2026 Mockarty. All rights reserved.</sub></p>
+- [Админ-нода](docs/ADMIN_GUIDE.md) · [Mock Resolver](docs/RESOLVER_GUIDE.md) · [Тестовый раннер](docs/RUNNER_GUIDE.md) · [Нативные протокольные моки](https://mockarty.ru/docs/native-protocol-mocks)
+- [Варианты развёртывания](deploy/README.md) · [Сообщить о воспроизводимой проблеме](https://github.com/mockarty/releases/issues)
+- [Лицензия](LICENSE) · [Условия Community](https://mockarty.ru/legal/community) · [Мобильные политики и удаление аккаунта](https://mockarty.ru/legal)

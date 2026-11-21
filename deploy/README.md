@@ -1,110 +1,29 @@
-<p align="center"><img src="https://raw.githubusercontent.com/mockarty/releases/main/logo.svg" width="200" alt="Mockarty"></p>
+# Deploy Mockarty
 
-<h1 align="center">Mockarty Deployment Guide</h1>
+[Русская версия](#развёртывание-mockarty) · [Community Server](../README.md)
 
-<p align="center">
-  <i>Deploy Mockarty as a single node for evaluation or as a distributed cluster for production</i>
-</p>
+Start with one admin node. Add a resolver when you need dedicated capacity for mock traffic and add test runners for distributed execution.
 
----
+| Deployment | Guide |
+|---|---|
+| Self-hosted Community on one machine | [Community Server quick start](../README.md#start-community-server-with-docker) |
+| Docker Compose with optional resolver and test runner | [Docker Compose](DOCKER_COMPOSE.md) |
+| Kubernetes | [Helm setup](KUBERNETES.md) |
+| Workstation | [Published Desktop downloads](https://mockarty.ru/downloads) |
 
-## Architecture Overview
+Select the artifacts listed with your chosen [Mockarty release](https://github.com/mockarty/releases/releases). For shared access, configure HTTPS using the [deployment guide](https://mockarty.ru/docs/deployment-guide).
 
-Mockarty is a multi-component platform. Depending on your needs, you can deploy a single node or a full distributed cluster.
+## Развёртывание Mockarty
 
-```
-                          +---------------------+
-                          |    Admin Node        |
-    [Clients] --------->  |  Web UI + REST API   |
-                          |  MCP + Coordinator   |
-                          +----------+----------+
-                                     |
-                      +--------------+--------------+
-                      |                             |
-              +-------v-------+            +--------v--------+
-              | Mock Resolver |            |  Runner Agent    |
-              | (serves mocks)|            | (runs tests)     |
-              | x N replicas  |            | x N replicas     |
-              +---------------+            +-----------------+
-```
+[Community Server](../README.md#mockarty-community-на-русском)
 
-| Component | Description | Docker Image |
-|-----------|-------------|--------------|
-| **Admin Node** | Central server: Web UI, REST API, MCP, mock management, coordinator | `mockarty/mockarty` |
-| **Mock Resolver** | Lightweight mock-serving node for horizontal scaling | `mockarty/resolver` |
-| **Runner Agent** | Distributed test/performance/chaos execution agent | `mockarty/runner` |
+Начните с одной админ-ноды. Добавьте резолвер, если нужны отдельные ресурсы для трафика моков, и раннеры тестов для распределённого выполнения.
 
-**Minimal deployment** requires only the Admin Node + PostgreSQL. Resolvers and runners are optional and added when you need horizontal scaling or distributed test execution.
+| Развёртывание | Руководство |
+|---|---|
+| Community на одной машине | [Быстрый старт Community Server](../README.md#запуск-community-server-в-docker) |
+| Docker Compose с резолвером и раннером тестов | [Docker Compose](DOCKER_COMPOSE.md#docker-compose-на-русском) |
+| Kubernetes | [Установка с Helm](KUBERNETES.md#kubernetes-на-русском) |
+| Рабочая станция | [Опубликованные сборки Desktop](https://mockarty.ru/downloads?lang=ru) |
 
-## Deployment Methods
-
-### Docker Compose
-
-Best for: single-server deployments, evaluation, small-to-medium teams.
-
-See **[DOCKER_COMPOSE.md](DOCKER_COMPOSE.md)** for the full guide.
-
-**Quick start:**
-
-```bash
-# Download files
-curl -LO https://raw.githubusercontent.com/mockarty/releases/main/deploy/docker-compose.minimal.yml
-curl -LO https://raw.githubusercontent.com/mockarty/releases/main/deploy/.env.example
-
-# Configure
-cp .env.example .env
-nano .env  # set POSTGRES_PASSWORD and FIRST_ADMIN_PASSWORD
-
-# Start
-docker compose -f docker-compose.minimal.yml up -d
-
-# Open Web UI
-open http://localhost:5770/ui/
-```
-
-### Kubernetes (Helm)
-
-Best for: production clusters, auto-scaling, high availability.
-
-See **[KUBERNETES.md](KUBERNETES.md)** for the full guide.
-
-**Quick start:**
-
-```bash
-# Add Bitnami repo for PostgreSQL/Redis subcharts
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo update
-
-# Download the Helm chart from the latest release
-curl -LO https://github.com/mockarty/releases/releases/download/v1.0.0/mockarty-helm-chart-1.0.0.tgz
-
-# Install minimal (single admin + PostgreSQL)
-helm install mockarty mockarty-helm-chart-1.0.0.tgz \
-  --set admin.secrets.FIRST_ADMIN_PASSWORD="your-password" \
-  --set postgresql.auth.password="db-password" \
-  --namespace mockarty \
-  --create-namespace
-```
-
-## Port Reference
-
-| Port | Protocol | Component | Purpose |
-|------|----------|-----------|---------|
-| 5770 | HTTP | Admin | Web UI, REST API, mock HTTP traffic |
-| 5771 | HTTPS | Admin | TLS-terminated HTTP |
-| 5772 | TCP | Admin | MCP (Model Context Protocol) server |
-| 5773 | gRPC | Admin | Coordinator (internal, resolver/runner registration) |
-| 5780 | HTTP | Resolver | Mock HTTP traffic serving |
-| 6780 | HTTP | Resolver | Resolver dashboard UI |
-| 6770 | HTTP | Runner | Runner dashboard UI |
-
-## Links
-
-- [Documentation](https://mockarty.ru/docs)
-- [Docker Hub](https://hub.docker.com/u/mockarty)
-- [GitHub Releases](https://github.com/mockarty/releases/releases)
-- [Website](https://mockarty.ru)
-
----
-
-<p align="center"><sub>&copy; 2026 Mockarty. All rights reserved.</sub></p>
+Выбирайте артефакты, указанные в нужном [релизе Mockarty](https://github.com/mockarty/releases/releases). Для общего доступа настройте HTTPS по [руководству по развёртыванию](https://mockarty.ru/docs/deployment-guide?lang=ru).
